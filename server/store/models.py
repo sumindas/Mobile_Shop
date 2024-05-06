@@ -3,14 +3,19 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class Category(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField()
+    categories = (
+        ('Redmi', 'Redmi'),
+        ('Samsung', 'Samsung'),
+        ('Apple', 'Apple'),
+        ('Realme', 'Realme'),
+    )
+    name = models.CharField(max_length=100,choices=categories,unique=True)
     is_deleted = models.BooleanField(default=False)
     
     def __str__(self):
         return self.name
     
-    
+     
 class Product(models.Model):
     name = models.CharField(max_length=250)
     description = models.CharField(max_length=250)
