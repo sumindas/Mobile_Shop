@@ -1,9 +1,12 @@
 /* eslint-disable no-unused-vars */
 import React from 'react'
+import Products from './Products'
 
 function HomeUser() {
   return (
-    <div>userHome</div>
+    <>
+        <Products />
+    </>
   )
 }
 
