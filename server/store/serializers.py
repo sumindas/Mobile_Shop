@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import *
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class ProductSerializers(serializers.ModelSerializer):
@@ -14,37 +15,66 @@ class CategoryListSerializers(serializers.ModelSerializer):
         
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['username','email','password']
-        extra_kwargs = {'password':{'write_only':True}}
+        model = Custom_User
+        fields = ['id','email','username','password']
+        extra_kwargs = {
+            'password': {'write_only':True}
+        }
         
-    # def validate(self, data):
-    #     """
-    #     Check if the username or email already exists.
-    #     """
-    #     username = data.get('username')
-    #     email = data.get('email')
+        def create(self, validated_data):
+            password = validated_data.pop('password', None)
+            instance = self.Meta.model(**validated_data)
+            if password is not None:
+                instance.set_password(password)
+            instance.save()
+            return instance
 
-    #     if User.objects.filter(username=username).exists():
-    #         raise serializers.ValidationError("Username already exists.")
-    #     if User.objects.filter(email=email).exists():
-    #         raise serializers.ValidationError("Email already exists.")
-
-    #     return data
-        
-class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializers(read_only = True)
-    class Meta:
-        model = CartItem
-        fields = ['cart','product','quantity']
-        
-class CartSerializer(serializers.ModelSerializer):
-    cart_items = CartItemSerializer(many = True,read_only = True)
+class LoginUserSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=25)
+    password = serializers.CharField(max_length=128,write_only=True)
+    access_token = serializers.CharField(max_length=255,read_only=True)
+    refresh_token = serializers.CharField(max_length=255,read_only=True)
+    
+    user = UserSerializer(read_only=True)
     
     class Meta:
-        model = Cart
-        fields = ['id','cart_items']
+        model = Custom_User
+        fields = ['email','username','password','access_token','refresh_token']
         
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        print(email,password,"---------")
+        user = Custom_User.objects.filter(email=email).first()
+        print("User:",user)
+        if user is None:
+            raise serializers.ValidationError("User does not exist.")
+        if not user.is_active:
+            raise AuthenticationFailed("User Blocked!")
+        
+        if user.password != password:
+            raise serializers.ValidationError("incorrect Password")
+        user_token = user.tokens()
+        return {
+            'email':email,
+            'username':user.username,
+            'access_token': str(user_token.get('access')),
+            'refresh_token': str(user_token.get('refresh')),
+        }
+        
+class CartSerializer(serializers.ModelSerializer):
+    user  = UserSerializer(read_only=True)
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'created_at']
+        
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializers(read_only=True)
+    cart = CartSerializer(read_only=True)
+    class Meta:
+        model = CartItem
+        fields = ['id', 'cart', 'product', 'quantity']
+
         
 
         

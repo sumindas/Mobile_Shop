@@ -1,22 +1,23 @@
 from rest_framework import generics
-from .models import Product,Cart,CartItem
-from .serializers import ProductSerializers,UserSerializer,CartItemSerializer,CartSerializer
+from .models import Product,Cart,CartItem,Custom_User
+from .serializers import ProductSerializers,UserSerializer,CartItemSerializer,CartSerializer,LoginUserSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import status
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import authenticate, login
-
-
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 
 
 class ProductsListView(generics.ListAPIView):
+    print("--------")
     queryset = Product.objects.all()
     serializer_class = ProductSerializers
-    
+
+
+
 class ProductDetailView(RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializers
@@ -31,70 +32,93 @@ class ProductDetailView(RetrieveAPIView):
         return Response(response_data, status=status.HTTP_200_OK)
     
 
-class UserSignupView(APIView):
-    permission_classes = [AllowAny]
-    def post(self,request):
-        data = request.data
-        username = data.get('username')
-        email = data.get('email')
-        
-        if User.objects.filter(email=email).exists():
-            return Response({'error':'Email Already Exists'},status=status.HTTP_400_BAD_REQUEST)
-        if User.objects.filter(username=username).exists():
-            return Response({'error':'Username Already Exists'},status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = UserSerializer(data=data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response({
-                'status':200,
-                'message':'User Signup Successfully',
-                'data' : serializer.data
-            })
-        except Exception as e:
-            return Response({'error':str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
-class LoginView(APIView):
-    def post(self,request):
-        email = request.data['email']
-        password = request.data['password']
 
-        if not email:
-           return Response({'error':'Email is Required'},status=status.HTTP_400_BAD_REQUEST)
-        if not password:
-           return Response({'error':'Password is Required'},status=status.HTTP_400_BAD_REQUEST)
+class UserSignupView(generics.CreateAPIView):
+    permission_classes = ()
+    authentication_classes = ()
+    serializer_class = UserSerializer
 
-        user = User.objects.all().filter(email=email).first()
-        print(user.username,"name")
-        auth = authenticate(request,username=user.username,password=password)
-        print("Auth User:",auth)
-        if user is None:
-            return Response({'error':'User Not Found'},status=status.HTTP_400_BAD_REQUEST)
+    def create(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        username = request.data.get('username')
+        print(email,username)
+        if Custom_User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        if Custom_User.objects.filter(username=username).exists():
+            return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().create(request, *args, **kwargs)
+        return Response({
+            'data': response.data,
+            'message': 'account created successfully'
+        }, status=status.HTTP_201_CREATED)
+        
+        
+        
+    
+class LoginView(generics.CreateAPIView):
+    permission_classes = ()
+    authentication_classes = ()
+    serializer_class = LoginUserSerializer
+    
+    def create(self,request,*args,**kwargs):
+        serializer = self.get_serializer(
+            data=request.data,context={'request':request}
+        )
+        print(serializer,"==data")
+        if serializer.is_valid():
+            return Response(serializer.data,status=status.HTTP_200_OK)
         else:
-            return Response({"message": "Login successful!", "user": {"id": user.id, "username":user.username, "email": user.email}}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class AddToCartView(generics.CreateAPIView):
-    queryset = CartItem.objects.all()
+
+
+class UserCartItemsView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = CartItemSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+        return CartItem.objects.filter(cart__user=user)
 
-    def perform_create(self, serializer):
-        print("--------------",self.request.user)
-        product_id = self.request.data.get('product_id')
+class AddToCartView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        print("user:",request.user)
+        product_id = request.data.get('product_id')
+        quantity = request.data.get('quantity',1)
         product = get_object_or_404(Product, id=product_id)
-        cart = get_object_or_404(Cart, user=self.request.user)
-        serializer.save(cart=cart, product=product)
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        existing_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+        if existing_item:
+            existing_item.quantity += quantity
+            existing_item.save()
+        else:
+            CartItem.objects.create(cart=cart, product_id=product_id, quantity=quantity)
 
-class UpdateCartItemView(generics.UpdateAPIView):
-    queryset = CartItem.objects.all()
-    serializer_class = CartItemSerializer
+        return Response({"message": "Item added to cart successfully."}, status=status.HTTP_200_OK)
+      
 
-    def get_object(self):
-        cart_item_id = self.kwargs['cart_item_id']
-        return get_object_or_404(CartItem, id=cart_item_id)
 
-    def perform_update(self, serializer):
-        serializer.save(quantity=self.request.data.get('quantity'))
+
+class UpdateCartItemView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        product_id = request.data.get('product_id')
+        quantity = request.data.get('quantity', 1)  
+
+        product = get_object_or_404(Product, id=product_id)
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
+        existing_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+
+        if not existing_item:
+            return Response({"message": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
+
+        existing_item.quantity = quantity
+        existing_item.save()
+
+        return Response({"message": "Item quantity updated successfully."}, status=status.HTTP_200_OK)
 
     
     

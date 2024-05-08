@@ -3,29 +3,38 @@ import { AiOutlineClose, AiOutlineMenu } from 'react-icons/ai';
 import { FaHome, FaShoppingCart, FaUser, FaRegHeart, FaBars } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { setLogout } from '../../Redux/Slice';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Navbar = () => {
   const [nav, setNav] = useState(false);
-  const username = useSelector((state) => state.auth.username) || ''
-  // const dispatch = useDispatch();
+  const username = useSelector((state) => state.auth.token) || ''
+  console.log(username,"==============")
+  const navigate = useNavigate()
+  const dispatch = useDispatch();
 
   const handleNav = () => {
     setNav(!nav);
   };
 
   const handleLogout = () => {
-    // dispatch(setLogout());
+    dispatch(setLogout());
+    toast.success("Logged Out Successfully")
+    navigate('/')
+    
   };
 
   const navItems = [
-    { id: 1, icon: <FaHome /> }, 
-    { id: 2, icon: <FaShoppingCart /> }, 
+    { id: 1, icon: <Link to = '/'><FaHome /></Link> }, 
+    { id: 2, icon: <Link to = '/cart'><FaShoppingCart /></Link> }, 
     { id: 4, icon: <FaBars /> }, 
   ];
 
   return (
-    <div className='bg-gray-50 dark:bg-gray-900 flex justify-between items-center h-24 max-w-[1240px] mx-auto px-4 text-white'>
+    <>
+      <ToastContainer />
+      <div className='bg-gray-50 dark:bg-gray-900 flex justify-between items-center h-24 max-w-[1240px] mx-auto px-4 text-white'>
       <h1 className='ml-20 text-3xl font-bold text-[#00df9a]'>Shop</h1>
 
       <ul className='hidden md:flex'>
@@ -66,6 +75,7 @@ const Navbar = () => {
         <button onClick={handleLogout} className='p-2 rounded-lg bg-red-500 text-white'>
           Logout
         </button>
+        
       ) : (
         <ul className="list-none">
         <li className="p-4 hover:bg-[#00df9a] rounded-xl m-2 duration-300">
@@ -76,6 +86,7 @@ const Navbar = () => {
       </ul>
       )}
     </div>
+    </>
   );
 };
 

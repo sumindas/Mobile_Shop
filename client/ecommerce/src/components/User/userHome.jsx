@@ -3,6 +3,8 @@ import React from 'react'
 import Products from './Products'
 import Navbar from '../NavBar/navBar'
 import { useSelector } from 'react-redux'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function HomeUser() {
 
@@ -11,6 +13,7 @@ function HomeUser() {
   return (
     <>
         <Navbar />
+        <ToastContainer />
         <Products />
     </>
   )

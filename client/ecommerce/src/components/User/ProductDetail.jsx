@@ -9,16 +9,22 @@ import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../../Api/api";
 import Navbar from "../NavBar/navBar";
+import { useSelector } from "react-redux";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const { id } = useParams();
   const [product, setProduct] = useState({});
+  const token = useSelector((state)=>state.auth.token)
+  console.log("Token:",token)
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`${BASE_URL}/products/${id}/`);
+        const response = await axios.get(`${BASE_URL}/products/${id}/`, {
+        });
         setProduct(response.data);
         console.log("Product:", response.data);
       } catch (error) {
@@ -26,19 +32,31 @@ const ProductDetails = () => {
       }
     };
     fetchProduct();
-  }, [id]);
+  }, [id, token]); 
 
-  const handleAddToCart = async() => {
-    try{
-        const response = await axios.post(`${BASE_URL}/add_to_cart/`,{
-            product_id : product.id,
-            quantity : quantity
-        })
-        console.log("Product Added To Cart",response.data)
-    }catch(error){
-        console.log("Error adding",error)
+
+  const handleAddToCart = async () => {
+    if(!token){
+      toast.error("You need to log in to add items to the cart.");
+      return
+    }
+    console.log("Url:", BASE_URL);
+    try {
+      const response = await axios.post(`${BASE_URL}/add_to_cart/`, {
+        product_id: product.id,
+        quantity: quantity
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log("Product Added To Cart", response.data);
+    } catch (error) {
+      console.log("Error adding", error);
     }
   };
+  
+
 
   const handleQuantityIncrease = (e) => {
     e.preventDefault()
@@ -55,6 +73,7 @@ const ProductDetails = () => {
   return (
     <>
       <Navbar />
+      <ToastContainer />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <div className="max-w-4xl w-full mx-auto">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">

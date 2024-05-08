@@ -34,13 +34,13 @@ const togglePasswordVisibility = () => {
     try {
       const response = await axios.post(`${BASE_URL}/signup/`, formData);
       console.log("Response:",response.data);
-      if (response.status === 200) {
+      if (response.status === 201) {
         setErrors('')
         toast.success("Signup Successfull Redirect to Login page.. !", {
             autoClose:3000,
           });
         setTimeout(()=>{
-            navigate("/login");
+            navigate('/login');
         },3000)
       }
     } catch (error) {

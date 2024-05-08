@@ -4,20 +4,18 @@ const authSlice = createSlice({
     name : 'auth',
     initialState : {
         is_login : false,
-        user_id : '',
         user_email : '',
-        username : ''
+        token : '',
     },
     reducers : {
         setUser : (state,action)=>{
             state.is_login = true
-            state.user_id = action.payload.user.id
-            state.user_email = action.payload.user.email
-            state.username = action.payload.user.username
+            state.user_email = action.payload.email
+            state.token = action.payload.access_token
         },
         setLogout:(state)=>{
             state.user_email = ''
-            state.user_id = ''
+            state.token = ''
             state.is_login = false
         }
     }
