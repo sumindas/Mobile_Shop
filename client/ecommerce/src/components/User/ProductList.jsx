@@ -4,16 +4,14 @@ import {
   faShoppingCart,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { Link } from "react-router-dom";
 
 const ProductList = ({ product }) => {
   const handleAddToCart = () => {
     console.log("Adding", product.name, "to cart");
   };
 
-  const handleViewMore = () => {
-    console.log("Viewing more details for", product.name);
-  };
-
+  
   return (
     <div className="flex flex-col items-center justify-center bg-white shadow-md rounded-lg p-6 max-w-md mx-4 my-4">
       <div className="mb-4">
@@ -33,11 +31,12 @@ const ProductList = ({ product }) => {
           className="text-white bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-full p-2"
           onClick={handleAddToCart}
         />
-        <FontAwesomeIcon
-          icon={faInfoCircle}
-          className="text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded-full p-2 ml-2"
-          onClick={handleViewMore}
-        />
+          <Link to = {`/product/${product.id}`}>
+            <FontAwesomeIcon
+              icon={faInfoCircle}
+              className="text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded-full p-2 ml-2"
+            />
+          </Link>
       </div>
     </div>
   );

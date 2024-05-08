@@ -1,19 +1,27 @@
-/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { AiOutlineClose, AiOutlineMenu } from 'react-icons/ai';
-import { FaHome, FaShoppingCart, FaUser, FaRegHeart } from 'react-icons/fa'; 
+import { FaHome, FaShoppingCart, FaUser, FaRegHeart, FaBars } from 'react-icons/fa';
+import { useSelector, useDispatch } from 'react-redux';
+import { setLogout } from '../../Redux/Slice';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const [nav, setNav] = useState(false);
+  const username = useSelector((state) => state.auth.username) || ''
+  // const dispatch = useDispatch();
 
   const handleNav = () => {
     setNav(!nav);
   };
 
+  const handleLogout = () => {
+    // dispatch(setLogout());
+  };
+
   const navItems = [
     { id: 1, icon: <FaHome /> }, 
     { id: 2, icon: <FaShoppingCart /> }, 
-    { id: 3, icon: <FaUser /> }, 
+    { id: 4, icon: <FaBars /> }, 
   ];
 
   return (
@@ -35,7 +43,6 @@ const Navbar = () => {
         {nav? <AiOutlineClose size={20} /> : <AiOutlineMenu size={20} />}
       </div>
 
-      
       <ul
         className={
           nav
@@ -43,7 +50,7 @@ const Navbar = () => {
             : 'ease-in-out w-[60%] duration-500 fixed top-0 bottom-0 left-[-100%]'
         }
       >
-        <h1 className='w-full text-3xl font-bold text-[#00df9a] m-4'>aa.</h1>
+        <h1 className='w-full text-3xl font-bold text-[#00df9a] m-4'>Shop</h1>
 
         {navItems.map(item => (
           <li
@@ -54,6 +61,20 @@ const Navbar = () => {
           </li>
         ))}
       </ul>
+
+      {username? (
+        <button onClick={handleLogout} className='p-2 rounded-lg bg-red-500 text-white'>
+          Logout
+        </button>
+      ) : (
+        <ul className="list-none">
+        <li className="p-4 hover:bg-[#00df9a] rounded-xl m-2 duration-300">
+          <Link to="/login" className="cursor-pointer">
+            <FaUser />
+          </Link>
+        </li>
+      </ul>
+      )}
     </div>
   );
 };
