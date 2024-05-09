@@ -38,12 +38,13 @@ const ProductList = ({ product }) => {
     }
   };
 
+  const isOutOfStock = product.quantity_available === 0;
+
   return (
     <>
-      {/* <ToastContainer /> */}
       <div className="flex flex-col items-center justify-center bg-white shadow-md rounded-lg p-6 max-w-md mx-4 my-4">
         <div className="mb-4">
-          <p className="text-lg font-semibold">{product.name}</p>
+          <p className="text-lg font-semibold text-gray-900">{product.name}</p>
           <div className="mt-4 flex justify-center">
             <img
               src={product.image}
@@ -51,20 +52,30 @@ const ProductList = ({ product }) => {
               className="w-40 h-30 object-cover rounded-lg"
             />
           </div>
-          <p className="text-gray-500">₹ {product.price}</p>
+          <p className="text-gray-500 text-lg font-semibold">
+            ₹ {product.price}
+          </p>
         </div>
         <div className="px-6 py-4 flex justify-center space-x-4">
-          <FontAwesomeIcon
-            icon={faShoppingCart}
-            className="text-white bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-full p-2"
-            onClick={handleAddToCart}
-          />
-          <Link to={`/product/${product.id}`}>
-            <FontAwesomeIcon
-              icon={faInfoCircle}
-              className="text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded-full p-2"
-            />
-          </Link>
+          {!isOutOfStock ? (
+            <>
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                className="text-white bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-full p-2"
+                onClick={handleAddToCart}
+              />
+              <Link to={`/product/${product.id}`}>
+                <FontAwesomeIcon
+                  icon={faInfoCircle}
+                  className="text-white bg-green-500 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded-full p-2"
+                />
+              </Link>
+            </>
+          ) : (
+            <p className="text-white bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded-full p-2">
+              Out of Stock
+            </p>
+          )}
         </div>
       </div>
     </>

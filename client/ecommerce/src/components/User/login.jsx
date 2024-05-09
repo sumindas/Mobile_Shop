@@ -4,17 +4,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../../Api/api';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../Redux/Slice';
+import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Navbar from '../NavBar/navBar';
+import Footer from '../Footer/footer';
 
 const LoginForm = () => {
     
     const [email,setEmail] = useState('')
     const [password,setPassword] = useState('')
-    const [error,setError] = useState('')
+    const [errors,setErrors] = useState('')
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
     const handleSubmit = async(e)=>{
         e.preventDefault()
+        if (!email || !password){
+          toast.error("Please Fill Required Data")
+          return
+        }
         try{
             const response = await axios.post(`${BASE_URL}/login/`,{
                 email,
@@ -25,19 +34,23 @@ const LoginForm = () => {
                 console.log("Response:",response.data)
                 navigate('/')
               }
+              else{
+                toast.error("An Error Occured...!! Please Try Again..")
+              }
         }catch(error){
-            console.log("Error:",error)
-            if (error.response){
-                setError(error.response.data.error)
-                console.log(("---",error))
-            }
+            setErrors(error.response.data.non_field_errors)
+            console.log("Error:",errors)
+            toast.error(errors[0])
         }
     }
 
 
   return (
-    <section className="bg-white">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
+    <>
+      <Navbar />
+      <ToastContainer />
+      <section className="bg-gray-50">
+      <div className="flex flex-col items-center justify-center mx-auto md:h-screen lg:py-0">
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
@@ -64,6 +77,8 @@ const LoginForm = () => {
         </div>
       </div>
     </section>
+    <Footer />
+    </>
   );
 };
 

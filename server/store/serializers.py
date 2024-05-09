@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
 from rest_framework.exceptions import AuthenticationFailed
+import random
 
 
 class ProductSerializers(serializers.ModelSerializer):
@@ -74,7 +75,16 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = ['id', 'cart', 'product', 'quantity']
-
         
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['order','product','quantity','price_at_purchase']
+        
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['total_price','invoice_number','name','mobile','address']
 
         

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProductsListView,UserSignupView,LoginView,ProductDetailView,AddToCartView,UpdateCartItemView,UserCartItemsView
+from .views import ProductsListView,UserSignupView,LoginView,ProductDetailView,AddToCartView,UpdateCartItemView,UserCartItemsView,Remove_Cart_Item,OrderCreateView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -11,4 +11,6 @@ urlpatterns = [
     path('cart/',UserCartItemsView.as_view(),name='cart'),
     path('add_to_cart/', AddToCartView.as_view(), name='add_to_cart'),
     path('update_cart_item/', UpdateCartItemView.as_view(), name='update_cart_item'),
+    path('remove_cart_item/', Remove_Cart_Item.as_view(), name='remove_cart_item'),
+    path('place_order/', OrderCreateView.as_view(), name='place_order'),
 ]

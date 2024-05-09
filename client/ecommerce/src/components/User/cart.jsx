@@ -3,26 +3,29 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from "../../Api/api";
 import { useSelector } from "react-redux";
 import Navbar from "../NavBar/navBar";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Link, useNavigate } from "react-router-dom";
+import OrderDetails from "./orderModal";
+
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const token = useSelector((state) => state.auth.token);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if(!token){
-        toast.error("Please Login to View",{
-            onClose:()=>{
-                navigate('/login')
-            }
-        })
-
+    if (!token) {
+      toast.error("Please Login to View", {
+        onClose: () => {
+          navigate("/login");
+        },
+      });
+    } else {
+      fetchCartItems();
     }
-    fetchCartItems();
   }, []);
 
   const fetchCartItems = async () => {
@@ -45,8 +48,7 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    console.log("Ordering items:", cartItems);
-    console.log("Total:", orderTotal);
+    setIsModalOpen(true)
   };
 
   const updateCartItemQuantity = async (productId, newQuantity) => {
@@ -64,17 +66,67 @@ const CartPage = () => {
         }
       );
       console.log(response.data.message);
+      if (newQuantity === 0) {
+        await removeCartItem(productId);
+      }
       fetchCartItems();
     } catch (error) {
       console.error("Error updating cart item quantity:", error);
     }
   };
 
+  const removeCartItem = async (productId) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/remove_cart_item/`,
+        {
+          product_id: productId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 200) {
+        toast.success("Item Removed Successfully");
+        fetchCartItems();
+        console.log(response.data.message);
+      } else {
+        toast.error("Something Went Wrong");
+      }
+    } catch (error) {
+      console.error("Error removing cart item:", error);
+    }
+  };
+
+  if (cartItems.length === 0) {
+    return (
+        <>
+          <Navbar />
+          <div className="min-h-screen bg-gray-100  flex flex-col items-center justify-center">
+            <h1 className="mb-10 text-center text-2xl font-bold text-gray-800">
+              Your Cart is Empty
+            </h1>
+            <svg className="w-24 h-24 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <Link
+              to="/"
+              className="mt-10 text-center py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        </>
+      );
+      
+    }      
+
   return (
     <>
       <Navbar />
-      <ToastContainer />
-      <div className=" bg-gray-100 pt-20">
+      <div className="bg-gray-100 pt-20">
         <h1 className="mb-10 text-center text-2xl font-bold">Cart Items</h1>
         <div className="mx-auto max-w-5xl justify-center px-6 md:flex md:space-x-6 xl:px-0">
           <div className="rounded-lg md:w-2/3">
@@ -141,6 +193,7 @@ const CartPage = () => {
                         strokeWidth="1.5"
                         stroke="currentColor"
                         className="h-5 w-5 cursor-pointer duration-150 hover:text-red-500"
+                        onClick={() => removeCartItem(item.product.id)}
                       >
                         <path
                           strokeLinecap="round"
@@ -154,7 +207,6 @@ const CartPage = () => {
               </div>
             ))}
           </div>
-          {/* Sub total */}
           <div className="mt-6 h-full rounded-lg border bg-white p-6 shadow-md md:mt-0 md:w-1/3">
             <div className="mb-2 flex justify-between">
               <p className="text-gray-700">Sub Total</p>
@@ -181,6 +233,16 @@ const CartPage = () => {
           </div>
         </div>
       </div>
+      {isModalOpen && (
+        <OrderDetails
+          isOpen={isModalOpen}
+          setIsOpen={setIsModalOpen}
+          cartItems={cartItems}
+          orderTotal={orderTotal}
+          onClose={() => setIsModalOpen(false)}
+          update={fetchCartItems}
+        />
+      )}
     </>
   );
 };

@@ -5,7 +5,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      backgroundImage: theme => ({
+        'gradient-navbar': 'linear-gradient(to right, var(--tw-gradient-stops))',
+      }),
+    },
   },
   plugins: [],
 }
