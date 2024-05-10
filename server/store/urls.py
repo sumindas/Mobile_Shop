@@ -16,4 +16,6 @@ urlpatterns = [
     path('user_orders/',UserOrders.as_view(),name='user_orders'),
     path('order_item_detail/<int:pk>/', OrderItemsView.as_view(), name='order-item-detail'),
     path('download_invoice/<int:order_id>/', DownloadInvoiceApiView.as_view(), name='download_invoice'),
+    path('monthly_csv_report/',TriggerMonthlyReportView.as_view(),name='monthly_report'),
+    path('email_order_report/', EmailOrderReportView.as_view(), name='email_order_report'),
 ]

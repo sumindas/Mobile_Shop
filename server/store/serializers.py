@@ -45,9 +45,7 @@ class LoginUserSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-        print(email,password,"---------")
         user = Custom_User.objects.filter(email=email).first()
-        print("User:",user)
         if user is None:
             raise serializers.ValidationError("User does not exist.")
         if not user.is_active:

@@ -11,10 +11,13 @@ from django.http import HttpResponse
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle,Paragraph
-from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.contrib.auth.decorators import permission_required
 from reportlab.lib.styles import getSampleStyleSheet
 import random
+from .tasks import generate_order_report_csv
+from django.http import JsonResponse
+from django.core.mail import EmailMessage
+from django.conf import settings
+import os
 
 
 
@@ -191,6 +194,7 @@ class UserOrders(generics.ListAPIView):
     
     def get_queryset(self):
         user = self.request.user
+        print("---------------",user)
         if not user:
             return Response({"Error":"User Not Found"})
         return Order.objects.filter(user=user).order_by('-created_at')
@@ -226,15 +230,16 @@ class DownloadInvoiceApiView(View):
         response['Content-Disposition'] = f'attachment; filename="invoice_{order.invoice_number}.pdf"'
 
         doc = SimpleDocTemplate(response, pagesize=letter)
-    
-        paragraph = Paragraph("MobShop", style=getSampleStyleSheet()['Heading1'])
-        elements = [paragraph, Paragraph("")]
-    
+        elements = [Paragraph("MobShop", style=getSampleStyleSheet()['Heading1'])]
+
+        elements.append(Paragraph(""))
+
         data = [
             ['Invoice Number:', order.invoice_number],
             ['Invoice Date:', order.invoice_date.strftime('%Y-%m-%d')],
             ['Customer:', order.user.username],
-            ['Total Price:', f'${order.total_price}'],
+            ['Total Price:', f'₹{order.total_price}'],
+            ['Address:',order.address]
         ]
         table = Table(data, colWidths=[150, 200])
         table.setStyle(TableStyle([
@@ -245,11 +250,12 @@ class DownloadInvoiceApiView(View):
             ('TOPPADDING', (0, 0), (-1, 0), 12),
             ('FONTSIZE', (0, 0), (-1, 0), 14),
         ]))
-        elements.extend((table, Paragraph("", style=getSampleStyleSheet()['Normal'])))
-        
+        elements.append(table)
+        elements.append(Paragraph("", style=getSampleStyleSheet()['Normal']))
+
         data = [['Product', 'Quantity', 'Price']]
         data.extend(
-            [item.product.name, item.quantity, f'${item.price_at_purchase}']
+            [item.product.name, item.quantity, f'₹{item.price_at_purchase}']
             for item in order_items
         )
         table = Table(data)
@@ -257,12 +263,63 @@ class DownloadInvoiceApiView(View):
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('TOPPADDING', (0, 0), (-1, 0), 12),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('TOPPADDING', (0, 0), (-1, -1), 12),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
         ]))
         elements.append(table)
 
-    
         doc.build(elements)
         return response
+
+
+class TriggerMonthlyReportView(View):
+    permission_classes = [IsAuthenticated]
+    def get(self,request,format=None):
+        print(request.user,"--")
+        task = generate_order_report_csv.delay()
+        task_result = task.get()
+        if task_result:
+            filename = os.path.join('C:\\Portfolio\\B40\\Machine_Test\\server', task_result)
+
+            with open(filename, 'r') as file:
+                csv_content = file.read()
+
+            return HttpResponse(csv_content, content_type='text/csv')
+        else:
+            return HttpResponse('Failed to generate order report', status=500)
+
+
+class EmailOrderReportView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        user_email = self.request.user.email
+        print("User:",user_email)
+        task = generate_order_report_csv.delay()
+        email_sent = self.send_email_with_attachment(task.id,user_email)
+
+        if email_sent:
+            return JsonResponse({'task_id': task.id, 'email_sent': True})
+        else:
+            return JsonResponse({'task_id': task.id, 'email_sent': False})
+        
+    def send_email_with_attachment(self, task_id,user_email):
+        try:
+            
+            task_result = generate_order_report_csv.AsyncResult(task_id).get()
+            filename = os.path.join('C:\\Portfolio\\B40\\Machine_Test\\server', task_result)
+
+            
+            subject = 'Order Report CSV'
+            message = 'Hello From MobShop,Please find the attached order report CSV file.'
+            email = EmailMessage(subject, message, settings.EMAIL_HOST_USER, [user_email])
+
+            email.attach_file(filename)
+
+            
+            email.send()
+
+            return True
+        except Exception as e:
+            print("Error sending email:", e)
+            return False
