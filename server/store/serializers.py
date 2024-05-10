@@ -46,11 +46,9 @@ class LoginUserSerializer(serializers.Serializer):
         email = attrs.get('email')
         password = attrs.get('password')
         user = Custom_User.objects.filter(email=email).first()
+        print("User",user)
         if user is None:
             raise serializers.ValidationError("User does not exist.")
-        if not user.is_active:
-            raise AuthenticationFailed("User Blocked!")
-        
         if user.password != password:
             raise serializers.ValidationError("incorrect Password")
         user_token = user.tokens()

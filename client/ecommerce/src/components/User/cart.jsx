@@ -3,18 +3,18 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from "../../Api/api";
 import { useSelector } from "react-redux";
 import Navbar from "../NavBar/navBar";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Link, useNavigate } from "react-router-dom";
 import OrderDetails from "./orderModal";
-
+import Footer from "../Footer/footer";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [orderTotal, setOrderTotal] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const token = useSelector((state) => state.auth.token);
-  console.log(token)
+  console.log(token);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,11 +49,24 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    setIsModalOpen(true)
+    setIsModalOpen(true);
   };
 
   const updateCartItemQuantity = async (productId, newQuantity) => {
     try {
+      const productResponse = await axios.get(`${BASE_URL}/products/${productId}/`, {});
+      const product = productResponse.data;
+      console.log(productResponse.data)
+  
+      if (newQuantity > product.available_quantity) {
+        toast.error("Out of Stock", {
+          onClose: () => {
+            updateCartItemQuantity(productId, product.available_quantity);
+          },
+        });
+        return; 
+      }
+
       const response = await axios.post(
         `${BASE_URL}/update_cart_item/`,
         {
@@ -75,7 +88,7 @@ const CartPage = () => {
       console.error("Error updating cart item quantity:", error);
     }
   };
-
+  
   const removeCartItem = async (productId) => {
     try {
       const response = await axios.post(
@@ -103,26 +116,38 @@ const CartPage = () => {
 
   if (cartItems.length === 0) {
     return (
-        <>
-          <Navbar />
-          <div className="min-h-screen bg-gray-100  flex flex-col items-center justify-center">
-            <h1 className="mb-10 text-center text-2xl font-bold text-gray-800">
-              Your Cart is Empty
-            </h1>
-            <svg className="w-24 h-24 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <Link
-              to="/"
-              className="mt-10 text-center py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
-            >
-              Continue Shopping
-            </Link>
-          </div>
-        </>
-      );
-      
-    }      
+      <>
+        <Navbar />
+        <ToastContainer/>
+        <div className="min-h-screen bg-gray-100  flex flex-col items-center justify-center">
+          <h1 className="mb-10 text-center text-2xl font-bold text-gray-800">
+            Your Cart is Empty
+          </h1>
+          <svg
+            className="w-24 h-24 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          <Link
+            to="/"
+            className="mt-10 text-center py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -157,7 +182,7 @@ const CartPage = () => {
                         onClick={() =>
                           updateCartItemQuantity(
                             item.product.id,
-                            item.quantity - 1
+                            item.quantity - 1,
                           )
                         }
                       >
@@ -177,6 +202,7 @@ const CartPage = () => {
                             item.quantity + 1
                           )
                         }
+                        disabled={item.product.available_quantity <= 0}
                       >
                         {" "}
                         +{" "}
@@ -244,6 +270,7 @@ const CartPage = () => {
           update={fetchCartItems}
         />
       )}
+      <Footer />
     </>
   );
 };

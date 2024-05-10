@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { BASE_URL } from "../../Api/api";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 
@@ -64,6 +64,8 @@ const OrderDetails = ({
   }
 
   return (
+   <>
+    <ToastContainer />
     <div
       className="fixed z-10 inset-0 overflow-y-auto"
       aria-labelledby="modal-title"
@@ -187,6 +189,7 @@ const OrderDetails = ({
         </div>
       </div>
     </div>
+   </>
   );
 };
 

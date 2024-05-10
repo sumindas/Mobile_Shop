@@ -41,9 +41,9 @@ def generate_order_report_csv():
     SAVE_DIR = 'C:\\Users\\sunil\\Downloads'
     filename = os.path.join(SAVE_DIR, 'order_report.csv')
     
-    with open(filename, 'w') as file:
-        file.write(csv_data.getvalue())
-
-    return filename
-    
+    try:
+        with open(filename, 'w') as file:
+            file.write(csv_data.getvalue())
+    except PermissionError:
+        print(f"Permission denied when trying to write to {filename}. Please check the file's permissions or try running the task with elevated permissions.")
     

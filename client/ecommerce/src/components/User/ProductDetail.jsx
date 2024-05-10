@@ -10,7 +10,7 @@ import axios from "axios";
 import { BASE_URL } from "../../Api/api";
 import Navbar from "../NavBar/navBar";
 import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Footer from "../Footer/footer";
 
@@ -83,6 +83,7 @@ const ProductDetails = () => {
   return (
     <>
       <Navbar />
+      <ToastContainer />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <div className="max-w-4xl w-full mx-auto">
           <div className="bg-white rounded-lg shadow-xl overflow-hidden">

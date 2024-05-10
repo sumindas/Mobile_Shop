@@ -274,7 +274,6 @@ class DownloadInvoiceApiView(View):
 
 
 class TriggerMonthlyReportView(View):
-    permission_classes = [IsAuthenticated]
     def get(self,request,format=None):
         print(request.user,"--")
         task = generate_order_report_csv.delay()
