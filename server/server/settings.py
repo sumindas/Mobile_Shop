@@ -61,8 +61,6 @@ MIDDLEWARE = [
 ]
 
 
-
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -88,11 +86,11 @@ WSGI_APPLICATION = 'server.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME' : 'machine_test',
-        'USER' : 'postgres',
-        'PASSWORD' : 'sumindasvr',
-        'HOST' : 'localhost',
-        'PORT' : '5432'
+        'NAME': 'machine_test',
+        'USER': 'postgres',
+        'PASSWORD': 'sumindasvr',
+        'HOST': 'localhost',
+        'PORT': '5432'
     }
 }
 
@@ -126,26 +124,26 @@ CORS_ALLOWED_HEADERS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173",  
+    "http://127.0.0.1:5173",
 ]
 CORS_ORIGIN_WHITELIST = (
-  'http://localhost:8000',
+    'http://localhost:8000',
 )
-SECURE_CROSS_ORIGIN_OPENER_POLICY='same-origin-allow-popups'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 SECURE_REFERRER_POLICY = 'same-origin'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-   
+
 ]
 
-CELERY_BROKER_URL= 'redis://127.0.0.1:6379'
-CELERY_ACCEPT_CONTENT= ['application/json']
-CELERY_RESULT_SERIALIZER= 'json'
-CELERY_TASK_SERIALIZER=  'json' 
-CELERY_TIMEZONE= 'Asia/Kolkata' 
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_RESULT_BACKEND = 'django-db'
 # CELERY_BEAT_SCHEDULER= 'django_celery_beat.scheduler:DatabseScheduler'
 
