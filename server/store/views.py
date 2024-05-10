@@ -147,25 +147,69 @@ class OrderCreateView(APIView):
         print("Cart:",request.data['cartItems'])
         prefix = "MOB"
         random_number = random.randint(1000, 9999)
-        invoice_number = f"#Invoice Number #{prefix}{random_number}"
+        invoice_number = f"#{prefix}{random_number}"
         order_data = request.data['order_data']
         order_data['invoice_number'] = invoice_number
         serializer = OrderSerializer(data=order_data)
         if serializer.is_valid():
             order = serializer.save(user=request.user)
             cart_items = request.data['cartItems']
+        else:
+            print("Errors:",serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        for item in cart_items:
+            product = Product.objects.get(id=item['product_id'])
+            order_item_data = {
+                'order' : order.id,
+                'product' : item['product_id'],
+                'quantity': item['quantity'],
+                'price_at_purchase' : item['price_at_purchase']
+            }
+            order_item_serializer = OrderItemSerializer(data=order_item_data)
+            if order_item_serializer.is_valid():
+                order_item_serializer.save(order=order,product=product)
+                product.quantity_available -= item['quantity']
+                product.save()
+            else:
+                print("Errors_Order_Item:",order_item_serializer.errors)
+                return Response(order_item_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            
             cart = Cart.objects.get(user=request.user)
-            for item in cart_items:
-                product = Product.objects.get(id=item['product_id'])
-                order_item_serializer = OrderItemSerializer(data=item)
-                if order_item_serializer.is_valid():
-                    order_item_serializer.save(order=order,product=product)
-                    product.quantity_available -= item['quantity']
-                    product.save()
             for existing_item in CartItem.objects.filter(cart=cart):
-                print("Items in Cart:",existing_item)
                 existing_item.delete()
-            order_serializer = OrderSerializer(order)
-            return Response({"message": "Order placed and cart cleared successfully.","order":order_serializer.data}, status=status.HTTP_200_OK)
-        print("Error:",serializer.errors)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        order_serializer = OrderSerializer(order)
+        return Response({"message": "Order placed and cart cleared successfully.","order":order_serializer.data,"Items":order_item_serializer.data}, status=status.HTTP_200_OK)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class UserOrders(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user:
+            return Response({"Error":"User Not Found"})
+        return Order.objects.filter(user=user).order_by('-created_at')
+
+class OrderItemsView(generics.ListAPIView):
+    serializer_class = OrderItemSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        order_id = self.kwargs['pk']
+        if not order_id:
+            return Response({'error': 'Order ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return OrderItem.objects.filter(order=order)
+    
+    
+    def list(self,request,*args,**kwargs):
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(queryset,many=True)
+        return Response(serializer.data)

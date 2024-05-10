@@ -14,6 +14,7 @@ const CartPage = () => {
   const [orderTotal, setOrderTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false)
   const token = useSelector((state) => state.auth.token);
+  console.log(token)
   const navigate = useNavigate();
 
   useEffect(() => {

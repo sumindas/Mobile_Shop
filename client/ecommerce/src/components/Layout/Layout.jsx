@@ -5,7 +5,9 @@ import SignUpForm from '../User/signUp';
 import LoginForm from '../User/login';
 import ProductDetails from '../User/ProductDetail';
 import CartPage from '../User/cart';
-import background_img from '../../Images/bg2.avif'; 
+import OrdersList from '../Dashboard/orders';
+import OrderDetailView from '../Dashboard/orderDetailView';
+
 export default function Layout() {
   return (
     <Router>
@@ -17,6 +19,8 @@ export default function Layout() {
           <Route path='/login' element={<LoginForm />} />
           <Route path='/product/:id' element={<ProductDetails />} />
           <Route path='/cart' element={<CartPage />} />
+          <Route path = '/orders' element = {<OrdersList/>}/>
+          <Route path = '/order_detail/:order_id' element = {<OrderDetailView/>}/>
         </Routes>
       {/* </div> */}
     </Router>

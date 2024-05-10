@@ -26,7 +26,7 @@ const Navbar = () => {
   const navItems = [
     { id: 1, icon: <Link to = '/'><FaHome /></Link> }, 
     { id: 2, icon: <Link to = '/cart'><FaShoppingCart /></Link> }, 
-    { id: 4, icon: <FaBars /> }, 
+    { id: 4, icon: <Link to = '/orders'><FaBars /></Link> }, 
   ];
 
   return (

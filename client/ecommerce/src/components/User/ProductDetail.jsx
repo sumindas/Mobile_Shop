@@ -12,6 +12,7 @@ import Navbar from "../NavBar/navBar";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Footer from "../Footer/footer";
 
 const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
@@ -134,6 +135,7 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 };

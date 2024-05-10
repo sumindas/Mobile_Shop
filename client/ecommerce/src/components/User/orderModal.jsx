@@ -42,13 +42,14 @@ const OrderDetails = ({
             cartItems : cartItems.map(item=>({
                 product_id : item.product.id,
                 quantity : item.quantity,
-                product_at_purchase : (item.product.price * item.quantity).toFixed(2)
+                price_at_purchase : (item.product.price * item.quantity).toFixed(2)
             }))
         },{
             headers : {
                 Authorization : `Bearer ${token}`
             }
         },)
+        console.log("Response:",response.data)
         if(response.status === 200){
             toast.success("Order Placed Succesfully")
             onClose()
