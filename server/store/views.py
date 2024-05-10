@@ -3,24 +3,28 @@ from .models import Product,Cart,CartItem,Custom_User,Order,OrderItem
 from .serializers import ProductSerializers,UserSerializer,CartItemSerializer,OrderSerializer,LoginUserSerializer,OrderItemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import status
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.views import View
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle,Paragraph
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.contrib.auth.decorators import permission_required
+from reportlab.lib.styles import getSampleStyleSheet
 import random
 
 
 
+
 class ProductsListView(generics.ListAPIView):
-    print("--------")
     queryset = Product.objects.all()
     serializer_class = ProductSerializers
 
 
-
-class ProductDetailView(RetrieveAPIView):
+class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializers
     def get(self, request, *args, **kwargs):
@@ -125,6 +129,8 @@ class UpdateCartItemView(APIView):
 
         return Response({"message": "Item quantity updated successfully."}, status=status.HTTP_200_OK)
     
+    
+    
 class Remove_Cart_Item(APIView):
     permission_classes = [IsAuthenticated]
     def post(self,request):
@@ -143,8 +149,6 @@ class Remove_Cart_Item(APIView):
 class OrderCreateView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, format=None):
-        print("Data order:",request.data['order_data'])
-        print("Cart:",request.data['cartItems'])
         prefix = "MOB"
         random_number = random.randint(1000, 9999)
         invoice_number = f"#{prefix}{random_number}"
@@ -155,7 +159,6 @@ class OrderCreateView(APIView):
             order = serializer.save(user=request.user)
             cart_items = request.data['cartItems']
         else:
-            print("Errors:",serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         for item in cart_items:
@@ -172,7 +175,6 @@ class OrderCreateView(APIView):
                 product.quantity_available -= item['quantity']
                 product.save()
             else:
-                print("Errors_Order_Item:",order_item_serializer.errors)
                 return Response(order_item_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             
@@ -182,7 +184,6 @@ class OrderCreateView(APIView):
         
         order_serializer = OrderSerializer(order)
         return Response({"message": "Order placed and cart cleared successfully.","order":order_serializer.data,"Items":order_item_serializer.data}, status=status.HTTP_200_OK)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     
 class UserOrders(generics.ListAPIView):
@@ -213,3 +214,55 @@ class OrderItemsView(generics.ListAPIView):
         queryset = self.get_queryset()
         serializer = self.serializer_class(queryset,many=True)
         return Response(serializer.data)
+    
+class DownloadInvoiceApiView(View):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        order = Order.objects.get(pk=order_id)
+        order_items = OrderItem.objects.filter(order=order)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice_{order.invoice_number}.pdf"'
+
+        doc = SimpleDocTemplate(response, pagesize=letter)
+    
+        paragraph = Paragraph("MobShop", style=getSampleStyleSheet()['Heading1'])
+        elements = [paragraph, Paragraph("")]
+    
+        data = [
+            ['Invoice Number:', order.invoice_number],
+            ['Invoice Date:', order.invoice_date.strftime('%Y-%m-%d')],
+            ['Customer:', order.user.username],
+            ['Total Price:', f'${order.total_price}'],
+        ]
+        table = Table(data, colWidths=[150, 200])
+        table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TOPPADDING', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ]))
+        elements.extend((table, Paragraph("", style=getSampleStyleSheet()['Normal'])))
+        
+        data = [['Product', 'Quantity', 'Price']]
+        data.extend(
+            [item.product.name, item.quantity, f'${item.price_at_purchase}']
+            for item in order_items
+        )
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TOPPADDING', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ]))
+        elements.append(table)
+
+    
+        doc.build(elements)
+        return response
