@@ -49,9 +49,9 @@ const OrderDetails = ({
                 Authorization : `Bearer ${token}`
             }
         },)
-        console.log("Response:",response.data)
+        console.log("Response:",response.status)
         if(response.status === 200){
-            toast.success("Order Placed Succesfully")
+            toast.success("Order placed and cart cleared successfully")
             onClose()
             update()
         }
@@ -65,7 +65,6 @@ const OrderDetails = ({
 
   return (
    <>
-    <ToastContainer />
     <div
       className="fixed z-10 inset-0 overflow-y-auto"
       aria-labelledby="modal-title"

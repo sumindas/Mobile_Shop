@@ -47,31 +47,30 @@ const CartPage = () => {
       console.error("Error fetching cart items:", error);
     }
   };
-
   const handleCheckout = () => {
     setIsModalOpen(true);
   };
 
-  const updateCartItemQuantity = async (productId, newQuantity) => {
+  const updateCartItemQuantity = async (productId, action,productQuantity,newQuantity) => {
+    console.log("Actual:",productQuantity)
+    console.log("Cart:",newQuantity)
+    if (action === "increase" && productQuantity === 0){
+      toast.error("Item Out Of Stock")
+      return
+    }
+    else if(action === "decrease" && newQuantity === 1){
+      await removeCartItem(productId)
+      return
+    }
     try {
-      const productResponse = await axios.get(`${BASE_URL}/products/${productId}/`, {});
-      const product = productResponse.data;
-      console.log(productResponse.data)
-  
-      if (newQuantity > product.available_quantity) {
-        toast.error("Out of Stock", {
-          onClose: () => {
-            updateCartItemQuantity(productId, product.available_quantity);
-          },
-        });
-        return; 
-      }
-
+      const url =
+        action === "increase"
+          ? `${BASE_URL}/increase_cart_item/`
+          : `${BASE_URL}/decrease_cart_item/`;
       const response = await axios.post(
-        `${BASE_URL}/update_cart_item/`,
+        url,
         {
           product_id: productId,
-          quantity: newQuantity,
         },
         {
           headers: {
@@ -79,16 +78,19 @@ const CartPage = () => {
           },
         }
       );
-      console.log(response.data.message);
-      if (newQuantity === 0) {
-        await removeCartItem(productId);
+      if (response.status === 200) {
+        console.log("Response:", response.data);
+        fetchCartItems();
+      } else {
+        console.error("Error updating cart item quantity:", response.status);
+        toast.error("An error occurred while updating the cart item quantity.");
       }
-      fetchCartItems();
     } catch (error) {
       console.error("Error updating cart item quantity:", error);
+      toast.error("An error occurred while updating the cart item quantity.");
     }
   };
-  
+
   const removeCartItem = async (productId) => {
     try {
       const response = await axios.post(
@@ -118,7 +120,7 @@ const CartPage = () => {
     return (
       <>
         <Navbar />
-        <ToastContainer/>
+        <ToastContainer />
         <div className="min-h-screen bg-gray-100  flex flex-col items-center justify-center">
           <h1 className="mb-10 text-center text-2xl font-bold text-gray-800">
             Your Cart is Empty
@@ -152,87 +154,83 @@ const CartPage = () => {
   return (
     <>
       <Navbar />
+      <ToastContainer />
       <div className="bg-gray-100 pt-20">
         <h1 className="mb-10 text-center text-2xl font-bold">Cart Items</h1>
         <div className="mx-auto max-w-5xl justify-center px-6 md:flex md:space-x-6 xl:px-0">
           <div className="rounded-lg md:w-2/3">
-            {cartItems.map((item) => (
-              <div
-                key={item.id}
-                className="justify-between mb-6 rounded-lg bg-white p-6 shadow-md sm:flex sm:justify-start"
-              >
-                <img
-                  src={item.product.image}
-                  alt={item.product.name}
-                  className="w-full rounded-lg sm:w-40"
-                />
-                <div className="sm:ml-4 sm:flex sm:w-full sm:justify-between">
-                  <div className="mt-5 sm:mt-0">
-                    <h2 className="text-lg font-bold text-gray-900">
-                      {item.product.name}
-                    </h2>
-                    <p className="mt-1 text-xs text-gray-700">
-                      {item.product.description}
-                    </p>
-                  </div>
-                  <div className="mt-4 flex justify-between sm:space-y-6 sm:mt-0 sm:block sm:space-x-6">
-                    <div className="flex items-center border-gray-100">
-                      <span
-                        className="cursor-pointer rounded-l bg-gray-100 py-1 px-3.5 duration-100 hover:bg-blue-500 hover:text-blue-50"
-                        onClick={() =>
-                          updateCartItemQuantity(
-                            item.product.id,
-                            item.quantity - 1,
-                          )
-                        }
-                      >
-                        {" "}
-                        -{" "}
-                      </span>
-                      <input
-                        className="h-8 w-8 border bg-white text-center text-xs outline-none"
-                        value={item.quantity}
-                        min="1"
-                      />
-                      <span
-                        className="cursor-pointer rounded-r bg-gray-100 py-1 px-3 duration-100 hover:bg-blue-500 hover:text-blue-50"
-                        onClick={() =>
-                          updateCartItemQuantity(
-                            item.product.id,
-                            item.quantity + 1
-                          )
-                        }
-                        disabled={item.product.available_quantity <= 0}
-                      >
-                        {" "}
-                        +{" "}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <p className="text-sm">
-                        ₹{(item.product.price * item.quantity).toFixed(2)}
+            {cartItems.map((item) => {
+              console.log("Quantity:", item.product.quantity_available);
+              return (
+                <div
+                  key={item.id}
+                  className="justify-between mb-6 rounded-lg bg-white p-6 shadow-md sm:flex sm:justify-start"
+                >
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="w-full rounded-lg sm:w-40"
+                  />
+                  <div className="sm:ml-4 sm:flex sm:w-full sm:justify-between">
+                    <div className="mt-5 sm:mt-0">
+                      <h2 className="text-lg font-bold text-gray-900">
+                        {item.product.name}
+                      </h2>
+                      <p className="mt-1 text-xs text-gray-700">
+                        {item.product.description}
                       </p>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                        className="h-5 w-5 cursor-pointer duration-150 hover:text-red-500"
-                        onClick={() => removeCartItem(item.product.id)}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
+                    </div>
+                    <div className="mt-4 flex justify-between sm:space-y-6 sm:mt-0 sm:block sm:space-x-6">
+                      <div className="flex items-center border-gray-100">
+                        <span
+                          className="cursor-pointer rounded-l bg-gray-100 py-1 px-3.5 duration-100 hover:bg-blue-500 hover:text-blue-50"
+                          onClick={() =>
+                            updateCartItemQuantity(item.product.id, "decrease",item.product.quantity_available,item.quantity)
+                          }
+                        >
+                          {" "}
+                          -{" "}
+                        </span>
+                        <input
+                          className="h-8 w-8 border bg-white text-center text-xs outline-none"
+                          value={item.quantity}
+                          min="1"
                         />
-                      </svg>
+                        <span
+                          className={`cursor-pointer rounded-r bg-gray-100 py-1 px-3 duration-100 hover:bg-blue-500 hover:text-blue-50 `}
+                          onClick={() =>
+                            updateCartItemQuantity(item.product.id, "increase",item.product.quantity_available,item.quantity)
+                          }
+                        >
+                          {" "}
+                          +{" "}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <p className="text-sm">
+                          ₹{(item.product.price * item.quantity).toFixed(2)}
+                        </p>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="1.5"
+                          stroke="currentColor"
+                          className="h-5 w-5 cursor-pointer duration-150 hover:text-red-500"
+                          onClick={() => removeCartItem(item.product.id)}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-6 h-full rounded-lg border bg-white p-6 shadow-md md:mt-0 md:w-1/3">
             <div className="mb-2 flex justify-between">

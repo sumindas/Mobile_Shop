@@ -114,38 +114,65 @@ class AddToCartView(APIView):
             {"message": "Item added to cart successfully."}, status=status.HTTP_200_OK)
 
 
-class UpdateCartItemView(APIView):
+class IncreaseCartItemView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         product_id = request.data.get('product_id')
-        quantity = request.data.get('quantity', 1)
+        quantity = 1
 
         product = get_object_or_404(Product, id=product_id)
         cart, created = Cart.objects.get_or_create(user=request.user)
 
         existing_item = CartItem.objects.filter(
             cart=cart, product_id=product_id).first()
-        product = Product.objects.get(id=product_id)
-        print("Before:",product.quantity_available)
 
         if not existing_item:
             return Response({"message": "Item not found in cart."},
                             status=status.HTTP_404_NOT_FOUND)
-        
-        print("Existing Item:",existing_item.quantity)
-        change_in_quantity = quantity - existing_item.quantity
-        print("Change:",change_in_quantity)
-        product.quantity_available += change_in_quantity
-        product.save()
-        print("After:",product.quantity_available)
-        
-        
-        existing_item.quantity = quantity
+
+
+        existing_item.quantity += quantity
         existing_item.save()
 
+        product.quantity_available -= quantity
+        product.quantity_available = max(product.quantity_available, 0)
+        product.save()
+
         return Response(
-            {"message": "Item quantity updated successfully."}, status=status.HTTP_200_OK)
+            {"message": "Item quantity increased successfully."},
+            status=status.HTTP_200_OK)
+
+class DecreaseCartItemView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        product_id = request.data.get('product_id')
+        quantity = 1
+
+        product = get_object_or_404(Product, id=product_id)
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
+        existing_item = CartItem.objects.filter(
+            cart=cart, product_id=product_id).first()
+
+        if not existing_item:
+            return Response({"message": "Item not found in cart."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        existing_item.quantity -= quantity
+        if existing_item.quantity < 1:
+            existing_item.delete(cart=cart)
+        existing_item.save()
+
+
+        product.quantity_available += quantity
+        product.save()
+
+        return Response(
+            {"message": "Item quantity decreased successfully."},
+            status=status.HTTP_200_OK)
+
 
 
 class Remove_Cart_Item(APIView):
@@ -155,6 +182,7 @@ class Remove_Cart_Item(APIView):
         print("User:", request.user)
         product_id = request.data.get('product_id')
         cart = Cart.objects.get(user=request.user)
+        product = Product.objects.get(id=product_id)
         print("Cart:", cart, "--", "Product:", product_id)
         existing_item = CartItem.objects.filter(
             cart=cart, product=product_id).first()
@@ -162,6 +190,8 @@ class Remove_Cart_Item(APIView):
         if not existing_item:
             return Response({"message": "Item not found in cart."},
                             status=status.HTTP_404_NOT_FOUND)
+        product.quantity_available += existing_item.quantity
+        product.save()
         existing_item.delete()
         return Response(
             {"message": "Item removed from cart successfully."}, status=status.HTTP_200_OK)
@@ -196,8 +226,6 @@ class OrderCreateView(APIView):
             order_item_serializer = OrderItemSerializer(data=order_item_data)
             if order_item_serializer.is_valid():
                 order_item_serializer.save(order=order, product=product)
-                product.quantity_available -= item['quantity']
-                product.save()
             else:
                 return Response(
                     order_item_serializer.errors,
