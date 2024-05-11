@@ -127,14 +127,21 @@ class UpdateCartItemView(APIView):
         existing_item = CartItem.objects.filter(
             cart=cart, product_id=product_id).first()
         product = Product.objects.get(id=product_id)
+        print("Before:",product.quantity_available)
 
         if not existing_item:
             return Response({"message": "Item not found in cart."},
                             status=status.HTTP_404_NOT_FOUND)
-
-        existing_item.quantity = quantity
-        product.quantity_available -= quantity
+        
+        print("Existing Item:",existing_item.quantity)
+        change_in_quantity = quantity - existing_item.quantity
+        print("Change:",change_in_quantity)
+        product.quantity_available += change_in_quantity
         product.save()
+        print("After:",product.quantity_available)
+        
+        
+        existing_item.quantity = quantity
         existing_item.save()
 
         return Response(
